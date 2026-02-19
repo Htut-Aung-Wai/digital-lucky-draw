@@ -21,11 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.Collections;
 
-/**
- * Basic Authentication config.
- * Spring Boot 3 / Spring Security 6 đã bỏ WebSecurityConfigurerAdapter;
- * cấu hình tương đương dùng @Bean SecurityFilterChain và UserDetailsService.
- */
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -36,11 +32,7 @@ public class SecurityConfig {
     @Value("${app.password}")
     private String appPassword;
 
-    /**
-     * Tương đương override configure(HttpSecurity http) trong WebSecurityConfigurerAdapter.
-     */
 
-    // For Spring Boot 2.7 / Spring Security 5.7
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -50,16 +42,18 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)  // Changed from STATELESS
                 .and()
-                .httpBasic();
+                .httpBasic().disable();
+
+        /*.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .httpBasic();*/
 
         return http.build();
     }
 
-    /**
-     * Tương đương override configure(AuthenticationManagerBuilder auth) trong WebSecurityConfigurerAdapter.
-     */
+
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
         UserDetails user = User.builder()

@@ -9,7 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,12 +32,37 @@ public class AuthController {
     @Value("${app.redirect.url}")
     private String redirectUrl;
 
-    /**
-     * Đăng nhập bằng username/password. Nếu đúng, tạo session và trả Set-Cookie (JSESSIONID).
-     * Frontend gọi với credentials: 'include' để nhận cookie; các request sau tự gửi cookie.
-     */
+
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        // Check if user is already authenticated
+        Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
+
+        // If already authenticated with the same user, return success
+        if (existingAuth != null && existingAuth.isAuthenticated()
+                && !(existingAuth instanceof AnonymousAuthenticationToken)
+                && existingAuth.getName().equals(request.getUserName())) {
+            LoginResponse response = LoginResponse.builder()
+                    .username(request.getUserName())
+                    .authenticated(true)
+                    .message("Already logged in")
+                    .redirectUrl(redirectUrl)
+                    .build();
+            return responseFactory.buildSuccess(HttpStatus.OK, response, ErrorCode.CODE_200, response.getMessage());
+        }
+
+        // If authenticated with different user, logout first
+        if (existingAuth != null && existingAuth.isAuthenticated()
+                && !(existingAuth instanceof AnonymousAuthenticationToken)) {
+            try {
+                httpRequest.logout();
+            } catch (Exception ignored) {
+                // Ignore logout errors
+            }
+        }
+
+        // Now perform login
         try {
             httpRequest.login(request.getUserName(), request.getPassword());
         } catch (BadCredentialsException | ServletException e) {
@@ -45,6 +73,7 @@ public class AuthController {
                     "Invalid username or password"
             );
         }
+
         LoginResponse response = LoginResponse.builder()
                 .username(request.getUserName())
                 .authenticated(true)
@@ -54,9 +83,9 @@ public class AuthController {
         return responseFactory.buildSuccess(HttpStatus.OK, response, ErrorCode.CODE_200, response.getMessage());
     }
 
-    /**
-     * Đăng xuất: xóa session. Frontend gọi với credentials: 'include' để gửi cookie cần xóa.
-     */
+
+
+
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest httpRequest) {
         try {
