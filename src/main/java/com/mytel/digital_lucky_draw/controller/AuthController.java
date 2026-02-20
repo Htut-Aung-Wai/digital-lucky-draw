@@ -29,8 +29,8 @@ public class AuthController {
 
     private final ResponseFactory responseFactory;
 
-    @Value("${app.redirect.url}")
-    private String redirectUrl;
+    /*@Value("${app.redirect.url}")
+    private String redirectUrl;*/
 
 
 
@@ -47,7 +47,6 @@ public class AuthController {
                     .username(request.getUserName())
                     .authenticated(true)
                     .message("Already logged in")
-                    .redirectUrl(redirectUrl)
                     .build();
             return responseFactory.buildSuccess(HttpStatus.OK, response, ErrorCode.CODE_200, response.getMessage());
         }
@@ -78,7 +77,6 @@ public class AuthController {
                 .username(request.getUserName())
                 .authenticated(true)
                 .message("Login successful")
-                .redirectUrl(redirectUrl)
                 .build();
         return responseFactory.buildSuccess(HttpStatus.OK, response, ErrorCode.CODE_200, response.getMessage());
     }

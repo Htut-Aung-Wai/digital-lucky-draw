@@ -13,6 +13,5 @@ public class LoginResponse {
     private String username;
     private String message;
     private boolean authenticated;
-    private String redirectUrl;
 }
 
